@@ -1,7 +1,5 @@
-package application;
-
 import entity.*;
-import service.ApplicationService;
+import config.DatabaseSetup;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +13,7 @@ public class Main {
     private static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     public static void main(String[] args) {
+        DatabaseSetup.setupDatabase();
         while (true) {
             displayMainMenu();
             int choice = getIntInput();
@@ -244,7 +243,7 @@ public class Main {
         System.out.print("Email: ");
         contact.setEmail(getStringInput());
 
-        Organization org = new Organization(service.listAllOrganizations().size() + 1, name, country, contact);
+        Organization org = new Organization(0, name, country, contact);
         service.addOrganization(org);
         System.out.println("Organizația a fost adăugată cu succes!");
     }
@@ -327,8 +326,17 @@ public class Main {
         LocalDate startDate = LocalDate.parse(getStringInput(), dateFormatter);
         System.out.print("Data de sfârșit (format: dd-MM-yyyy): ");
         LocalDate endDate = LocalDate.parse(getStringInput(), dateFormatter);
+        System.out.print("ID-ul organizatorului: ");
+        int organizerId = getIntInput();
 
-        Project project = new Project(service.listAllProjects().size() + 1, title, description, euid, ProjectStatus.PENDING, startDate, endDate);
+        Organization organizer = service.getOrganizationDetails(organizerId);
+        if (organizer == null) {
+            System.out.println("Organizatorul nu a fost găsit.");
+            return;
+        }
+
+        Project project = new Project(0, title, description, euid, ProjectStatus.PENDING, startDate, endDate);
+        project.setOrganizer(organizer);
         service.addProject(project);
         System.out.println("Proiectul a fost adăugat cu succes!");
     }
@@ -392,7 +400,7 @@ public class Main {
         System.out.println("Detalii proiect: \n" + project);
     }
 
-    static void addParticipant() {
+    private static void addParticipant() {
         System.out.println("\n----- Adăugare Participant -----");
         System.out.print("Nume participant: ");
         String name = getStringInput();
@@ -409,7 +417,7 @@ public class Main {
         contact.setEmail(getStringInput());
 
         int age = LocalDate.now().getYear() - dateOfBirth.getYear();
-        Person person = new Person(service.listAllParticipants().size() + 1, country, name, dateOfBirth, age, contact);
+        Person person = new Person(0, country, name, dateOfBirth, age, contact);
         service.addPerson(person);
         System.out.println("Participantul a fost adăugat cu succes!");
     }
@@ -509,7 +517,6 @@ public class Main {
         String details = getStringInput();
 
         Application application = new Application();
-        application.setId(service.listAllParticipants().size() + 1);
         application.setPerson(person);
         application.setProject(project);
         application.setStatus(ApplicationStatus.SUBMITTED);
@@ -565,7 +572,6 @@ public class Main {
         }
 
         System.out.println("Detalii aplicație: \n" + application);
-
     }
 
     private static void approveOrRejectApplication() {
